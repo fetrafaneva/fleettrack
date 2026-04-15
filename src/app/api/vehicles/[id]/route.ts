@@ -49,3 +49,25 @@ export async function PUT(
     );
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await connectDB();
+    const vehicle = await Vehicle.findByIdAndDelete(params.id);
+    if (!vehicle) {
+      return NextResponse.json(
+        { success: false, error: "Véhicule non trouvé" },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json({ success: true, data: {} });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: "Erreur serveur" },
+      { status: 500 }
+    );
+  }
+}

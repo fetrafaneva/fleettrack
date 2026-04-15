@@ -23,3 +23,29 @@ export async function GET(
     );
   }
 }
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await connectDB();
+    const body = await request.json();
+    const vehicle = await Vehicle.findByIdAndUpdate(params.id, body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!vehicle) {
+      return NextResponse.json(
+        { success: false, error: "Véhicule non trouvé" },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json({ success: true, data: vehicle });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: "Erreur lors de la mise à jour" },
+      { status: 400 }
+    );
+  }
+}

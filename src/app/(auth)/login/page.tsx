@@ -19,19 +19,30 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: form.email,
-      password: form.password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      });
 
-    if (error) {
-      setError("Email ou mot de passe incorrect");
+      if (error) {
+        console.error("Auth error:", error.message);
+        setError("Email ou mot de passe incorrect : " + error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data.session) {
+        window.location.href = "/dashboard";
+      } else {
+        setError("Session non créée, réessayez");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setError("Une erreur est survenue");
       setLoading(false);
-      return;
     }
-
-    router.push("/dashboard");
-    router.refresh();
   };
 
   return (

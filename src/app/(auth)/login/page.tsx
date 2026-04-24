@@ -26,16 +26,20 @@ export default function LoginPage() {
       });
 
       if (error) {
-        setError("Email ou mot de passe incorrect");
+        console.error("Auth error:", error.message);
+        setError("Email ou mot de passe incorrect : " + error.message);
         setLoading(false);
         return;
       }
 
       if (data.session) {
-        router.push("/dashboard");
-        router.refresh();
+        window.location.href = "/dashboard";
+      } else {
+        setError("Session non créée, réessayez");
+        setLoading(false);
       }
     } catch (err) {
+      console.error("Unexpected error:", err);
       setError("Une erreur est survenue");
       setLoading(false);
     }

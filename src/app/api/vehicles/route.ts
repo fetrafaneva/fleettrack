@@ -19,11 +19,21 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
     const body = await request.json();
-    const vehicle = await Vehicle.create(body);
+
+    // Convertir les strings en nombres
+    const vehicleData = {
+      ...body,
+      modelName: body.model,
+      year: Number(body.year),
+      mileage: Number(body.mileage) || 0,
+    };
+
+    const vehicle = await Vehicle.create(vehicleData);
     return NextResponse.json({ success: true, data: vehicle }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Vehicle creation error:", JSON.stringify(error.message));
     return NextResponse.json(
-      { success: false, error: "Erreur lors de la création" },
+      { success: false, error: error.message },
       { status: 400 }
     );
   }

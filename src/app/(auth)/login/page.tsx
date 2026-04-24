@@ -19,19 +19,26 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: form.email,
-      password: form.password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      });
 
-    if (error) {
-      setError("Email ou mot de passe incorrect");
+      if (error) {
+        setError("Email ou mot de passe incorrect");
+        setLoading(false);
+        return;
+      }
+
+      if (data.session) {
+        router.push("/dashboard");
+        router.refresh();
+      }
+    } catch (err) {
+      setError("Une erreur est survenue");
       setLoading(false);
-      return;
     }
-
-    router.push("/dashboard");
-    router.refresh();
   };
 
   return (

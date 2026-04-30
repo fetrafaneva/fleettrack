@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,58 +10,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Phone, Mail, CreditCard } from "lucide-react";
+import { Plus, Phone, Mail, CreditCard, Pencil, Trash2 } from "lucide-react";
 
-const mockDrivers = [
-  {
-    _id: "1",
-    firstName: "Rakoto",
-    lastName: "Jean",
-    email: "rakoto.jean@fleet.mg",
-    phone: "+261 34 00 000 01",
-    licenseNumber: "MG-2019-001234",
-    licenseExpiry: "2026-05-15",
-    status: "on_mission",
-    totalMissions: 142,
-    totalKm: 28450,
-  },
-  {
-    _id: "2",
-    firstName: "Rasoa",
-    lastName: "Marie",
-    email: "rasoa.marie@fleet.mg",
-    phone: "+261 33 00 000 02",
-    licenseNumber: "MG-2020-005678",
-    licenseExpiry: "2027-03-20",
-    status: "available",
-    totalMissions: 98,
-    totalKm: 19200,
-  },
-  {
-    _id: "3",
-    firstName: "Rabe",
-    lastName: "Paul",
-    email: "rabe.paul@fleet.mg",
-    phone: "+261 32 00 000 03",
-    licenseNumber: "MG-2018-009012",
-    licenseExpiry: "2025-12-10",
-    status: "off",
-    totalMissions: 210,
-    totalKm: 45600,
-  },
-  {
-    _id: "4",
-    firstName: "Andry",
-    lastName: "Solo",
-    email: "andry.solo@fleet.mg",
-    phone: "+261 34 00 000 04",
-    licenseNumber: "MG-2021-003456",
-    licenseExpiry: "2028-01-30",
-    status: "on_mission",
-    totalMissions: 67,
-    totalKm: 12300,
-  },
-];
+interface Driver {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  licenseNumber: string;
+  licenseExpiry: string;
+  status: "available" | "on_mission" | "off";
+  totalMissions: number;
+  totalKm: number;
+}
 
 const statusConfig = {
   available: { label: "Disponible", className: "bg-green-100 text-green-700" },
@@ -69,36 +31,84 @@ const statusConfig = {
   off: { label: "Hors service", className: "bg-gray-100 text-gray-700" },
 };
 
+const defaultForm = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  licenseNumber: "",
+  licenseExpiry: "",
+};
+
 export default function DriversPage() {
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    licenseNumber: "",
-    licenseExpiry: "",
-  });
+  const [editDriver, setEditDriver] = useState<Driver | null>(null);
+  const [form, setForm] = useState(defaultForm);
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchDrivers = async () => {
+    setLoading(true);
+    const res = await fetch("/api/drivers");
+    const data = await res.json();
+    if (data.success) setDrivers(data.data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
+
+  const openAdd = () => {
+    setEditDriver(null);
+    setForm(defaultForm);
+    setOpen(true);
+  };
+
+  const openEdit = (driver: Driver) => {
+    setEditDriver(driver);
+    setForm({
+      firstName: driver.firstName,
+      lastName: driver.lastName,
+      email: driver.email,
+      phone: driver.phone,
+      licenseNumber: driver.licenseNumber,
+      licenseExpiry: driver.licenseExpiry.split("T")[0],
+    });
+    setOpen(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch("/api/drivers", {
-      method: "POST",
+    setSubmitting(true);
+
+    const url = editDriver ? `/api/drivers/${editDriver._id}` : "/api/drivers";
+    const method = editDriver ? "PUT" : "POST";
+
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
+
     const data = await res.json();
     if (data.success) {
       setOpen(false);
-      setForm({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-        licenseNumber: "",
-        licenseExpiry: "",
-      });
+      setForm(defaultForm);
+      setEditDriver(null);
+      fetchDrivers();
+    } else {
+      alert("Erreur : " + data.error);
     }
+    setSubmitting(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Supprimer ce conducteur ?")) return;
+    const res = await fetch(`/api/drivers/${id}`, { method: "DELETE" });
+    const data = await res.json();
+    if (data.success) fetchDrivers();
   };
 
   return (
@@ -110,14 +120,16 @@ export default function DriversPage() {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={openAdd}>
               <Plus className="h-4 w-4 mr-2" />
               Ajouter un conducteur
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Nouveau conducteur</DialogTitle>
+              <DialogTitle>
+                {editDriver ? "Modifier le conducteur" : "Nouveau conducteur"}
+              </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
@@ -205,7 +217,9 @@ export default function DriversPage() {
                 >
                   Annuler
                 </Button>
-                <Button type="submit">Enregistrer</Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? "Enregistrement..." : "Enregistrer"}
+                </Button>
               </div>
             </form>
           </DialogContent>
@@ -217,7 +231,7 @@ export default function DriversPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-green-600">
-              {mockDrivers.filter((d) => d.status === "available").length}
+              {drivers.filter((d) => d.status === "available").length}
             </div>
             <p className="text-sm text-muted-foreground">Disponibles</p>
           </CardContent>
@@ -225,7 +239,7 @@ export default function DriversPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-blue-600">
-              {mockDrivers.filter((d) => d.status === "on_mission").length}
+              {drivers.filter((d) => d.status === "on_mission").length}
             </div>
             <p className="text-sm text-muted-foreground">En mission</p>
           </CardContent>
@@ -233,73 +247,107 @@ export default function DriversPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-gray-600">
-              {mockDrivers.filter((d) => d.status === "off").length}
+              {drivers.filter((d) => d.status === "off").length}
             </div>
             <p className="text-sm text-muted-foreground">Hors service</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Liste conducteurs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {mockDrivers.map((driver) => {
-          const status =
-            statusConfig[driver.status as keyof typeof statusConfig];
-          return (
-            <Card
-              key={driver._id}
-              className="hover:shadow-md transition-shadow"
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                    {driver.firstName[0]}
-                    {driver.lastName[0]}
+      {/* Liste */}
+      {loading ? (
+        <div className="text-center py-12 text-muted-foreground">
+          Chargement...
+        </div>
+      ) : drivers.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          Aucun conducteur. Ajoutez votre premier conducteur !
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {drivers.map((driver) => {
+            const status = statusConfig[driver.status];
+            return (
+              <Card
+                key={driver._id}
+                className="hover:shadow-md transition-shadow"
+              >
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
+                      {driver.firstName[0]}
+                      {driver.lastName[0]}
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm font-semibold">
+                        {driver.firstName} {driver.lastName}
+                      </CardTitle>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${status.className}`}
+                      >
+                        {status.label}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-sm font-semibold">
-                      {driver.firstName} {driver.lastName}
-                    </CardTitle>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${status.className}`}
-                    >
-                      {status.label}
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Mail className="h-3 w-3" />
+                    <span>{driver.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Phone className="h-3 w-3" />
+                    <span>{driver.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CreditCard className="h-3 w-3" />
+                    <span>
+                      {driver.licenseNumber} • exp.{" "}
+                      {new Date(driver.licenseExpiry).toLocaleDateString(
+                        "fr-FR"
+                      )}
                     </span>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Mail className="h-3 w-3" />
-                  <span>{driver.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Phone className="h-3 w-3" />
-                  <span>{driver.phone}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <CreditCard className="h-3 w-3" />
-                  <span>
-                    {driver.licenseNumber} • exp. {driver.licenseExpiry}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                  <div className="text-center">
-                    <p className="text-sm font-bold">{driver.totalMissions}</p>
-                    <p className="text-xs text-muted-foreground">Missions</p>
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                    <div className="text-center">
+                      <p className="text-sm font-bold">
+                        {driver.totalMissions}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Missions</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold">
+                        {driver.totalKm.toLocaleString()} km
+                      </p>
+                      <p className="text-xs text-muted-foreground">Parcourus</p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-sm font-bold">
-                      {driver.totalKm.toLocaleString()} km
-                    </p>
-                    <p className="text-xs text-muted-foreground">Parcourus</p>
+                  <div className="flex gap-2 mt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => openEdit(driver)}
+                    >
+                      <Pencil className="h-3 w-3 mr-1" />
+                      Modifier
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => handleDelete(driver._id)}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Supprimer
+                    </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

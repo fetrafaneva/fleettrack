@@ -1,72 +1,30 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Car, Users, ClipboardList, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const stats = [
-  {
-    title: "Total Véhicules",
-    value: "24",
-    description: "8 en mission",
-    icon: Car,
-    color: "text-blue-500",
-    bg: "bg-blue-50",
-  },
-  {
-    title: "Conducteurs",
-    value: "18",
-    description: "12 disponibles",
-    icon: Users,
-    color: "text-green-500",
-    bg: "bg-green-50",
-  },
-  {
-    title: "Missions actives",
-    value: "8",
-    description: "3 en attente",
-    icon: ClipboardList,
-    color: "text-orange-500",
-    bg: "bg-orange-50",
-  },
-  {
-    title: "Km ce mois",
-    value: "12,450",
-    description: "+8% vs mois dernier",
-    icon: TrendingUp,
-    color: "text-purple-500",
-    bg: "bg-purple-50",
-  },
-];
-
-const recentMissions = [
-  {
-    id: "1",
-    title: "Livraison Analakely",
-    driver: "Rakoto Jean",
-    vehicle: "Toyota Hilux - AB 1234",
-    status: "in_progress",
-  },
-  {
-    id: "2",
-    title: "Transport Ivandry",
-    driver: "Rasoa Marie",
-    vehicle: "Renault Express - CD 5678",
-    status: "completed",
-  },
-  {
-    id: "3",
-    title: "Livraison Itaosy",
-    driver: "Rabe Paul",
-    vehicle: "Honda CB500 - EF 9012",
-    status: "pending",
-  },
-  {
-    id: "4",
-    title: "Transfert Aéroport",
-    driver: "Andry Solo",
-    vehicle: "Toyota Corolla - GH 3456",
-    status: "in_progress",
-  },
-];
+interface Stats {
+  vehicles: {
+    total: number;
+    available: number;
+    onMission: number;
+    maintenance: number;
+  };
+  drivers: {
+    total: number;
+    available: number;
+  };
+  missions: {
+    total: number;
+    active: number;
+    pending: number;
+    completed: number;
+  };
+  totalKm: number;
+  recentMissions: any[];
+}
 
 const statusConfig = {
   in_progress: { label: "En cours", variant: "default" as const },
@@ -76,6 +34,70 @@ const statusConfig = {
 };
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const res = await fetch("/api/stats");
+      const data = await res.json();
+      if (data.success) setStats(data.data);
+      setLoading(false);
+    };
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Chargement des statistiques...</p>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Erreur de chargement</p>
+      </div>
+    );
+  }
+
+  const statCards = [
+    {
+      title: "Total Véhicules",
+      value: stats.vehicles.total.toString(),
+      description: `${stats.vehicles.onMission} en mission`,
+      icon: Car,
+      color: "text-blue-500",
+      bg: "bg-blue-50",
+    },
+    {
+      title: "Conducteurs",
+      value: stats.drivers.total.toString(),
+      description: `${stats.drivers.available} disponibles`,
+      icon: Users,
+      color: "text-green-500",
+      bg: "bg-green-50",
+    },
+    {
+      title: "Missions actives",
+      value: stats.missions.active.toString(),
+      description: `${stats.missions.pending} en attente`,
+      icon: ClipboardList,
+      color: "text-orange-500",
+      bg: "bg-orange-50",
+    },
+    {
+      title: "Km total",
+      value: stats.totalKm.toLocaleString(),
+      description: `${stats.missions.completed} missions terminées`,
+      icon: TrendingUp,
+      color: "text-purple-500",
+      bg: "bg-purple-50",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
@@ -85,7 +107,7 @@ export default function DashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
+        {statCards.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -105,38 +127,191 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* Statut flotte */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Statut de la flotte</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Disponibles</span>
+              <div className="flex items-center gap-2">
+                <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-green-500 rounded-full"
+                    style={{
+                      width: `${
+                        stats.vehicles.total > 0
+                          ? (stats.vehicles.available / stats.vehicles.total) *
+                            100
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+                <span className="text-sm font-medium w-6">
+                  {stats.vehicles.available}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">En mission</span>
+              <div className="flex items-center gap-2">
+                <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full"
+                    style={{
+                      width: `${
+                        stats.vehicles.total > 0
+                          ? (stats.vehicles.onMission / stats.vehicles.total) *
+                            100
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+                <span className="text-sm font-medium w-6">
+                  {stats.vehicles.onMission}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Maintenance</span>
+              <div className="flex items-center gap-2">
+                <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-orange-500 rounded-full"
+                    style={{
+                      width: `${
+                        stats.vehicles.total > 0
+                          ? (stats.vehicles.maintenance /
+                              stats.vehicles.total) *
+                            100
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+                <span className="text-sm font-medium w-6">
+                  {stats.vehicles.maintenance}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Statut des missions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Terminées</span>
+              <div className="flex items-center gap-2">
+                <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-green-500 rounded-full"
+                    style={{
+                      width: `${
+                        stats.missions.total > 0
+                          ? (stats.missions.completed / stats.missions.total) *
+                            100
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+                <span className="text-sm font-medium w-6">
+                  {stats.missions.completed}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">En cours</span>
+              <div className="flex items-center gap-2">
+                <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full"
+                    style={{
+                      width: `${
+                        stats.missions.total > 0
+                          ? (stats.missions.active / stats.missions.total) * 100
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+                <span className="text-sm font-medium w-6">
+                  {stats.missions.active}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">En attente</span>
+              <div className="flex items-center gap-2">
+                <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-yellow-500 rounded-full"
+                    style={{
+                      width: `${
+                        stats.missions.total > 0
+                          ? (stats.missions.pending / stats.missions.total) *
+                            100
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+                <span className="text-sm font-medium w-6">
+                  {stats.missions.pending}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Missions récentes */}
       <Card>
         <CardHeader>
           <CardTitle>Missions récentes</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {recentMissions.map((mission) => (
-              <div
-                key={mission.id}
-                className="flex items-center justify-between p-3 rounded-lg border"
-              >
-                <div className="space-y-1">
-                  <p className="font-medium text-sm">{mission.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {mission.driver} • {mission.vehicle}
-                  </p>
-                </div>
-                <Badge
-                  variant={
-                    statusConfig[mission.status as keyof typeof statusConfig]
-                      .variant
-                  }
+          {stats.recentMissions.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">
+              Aucune mission pour le moment
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {stats.recentMissions.map((mission: any) => (
+                <div
+                  key={mission._id}
+                  className="flex items-center justify-between p-3 rounded-lg border"
                 >
-                  {
-                    statusConfig[mission.status as keyof typeof statusConfig]
-                      .label
-                  }
-                </Badge>
-              </div>
-            ))}
-          </div>
+                  <div className="space-y-1">
+                    <p className="font-medium text-sm">{mission.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {mission.driver?.firstName} {mission.driver?.lastName} •{" "}
+                      {mission.vehicle?.brand} {mission.vehicle?.modelName} -{" "}
+                      {mission.vehicle?.plate}
+                    </p>
+                  </div>
+                  <Badge
+                    variant={
+                      statusConfig[mission.status as keyof typeof statusConfig]
+                        ?.variant
+                    }
+                  >
+                    {
+                      statusConfig[mission.status as keyof typeof statusConfig]
+                        ?.label
+                    }
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

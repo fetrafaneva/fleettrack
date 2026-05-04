@@ -1,9 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+
+interface VehiclePosition {
+  _id: string;
+  plate: string;
+  brand: string;
+  modelName: string;
+  type: string;
+  status: "available" | "on_mission" | "maintenance";
+  lastPosition: {
+    lat: number;
+    lng: number;
+    updatedAt: string;
+  };
+}
 
 const vehicleIcon = (status: string) =>
   L.divIcon({
@@ -33,49 +47,6 @@ const vehicleIcon = (status: string) =>
     popupAnchor: [0, -16],
   });
 
-const mockVehicles = [
-  {
-    _id: "1",
-    plate: "AB 1234",
-    brand: "Toyota",
-    model: "Hilux",
-    status: "on_mission",
-    driver: "Rakoto Jean",
-    lat: -18.8792,
-    lng: 47.5079,
-  },
-  {
-    _id: "2",
-    plate: "CD 5678",
-    brand: "Renault",
-    model: "Express",
-    status: "available",
-    driver: "Rasoa Marie",
-    lat: -18.9121,
-    lng: 47.5362,
-  },
-  {
-    _id: "3",
-    plate: "EF 9012",
-    brand: "Honda",
-    model: "CB500",
-    status: "maintenance",
-    driver: "Rabe Paul",
-    lat: -18.8512,
-    lng: 47.4892,
-  },
-  {
-    _id: "4",
-    plate: "GH 3456",
-    brand: "Toyota",
-    model: "Corolla",
-    status: "on_mission",
-    driver: "Andry Solo",
-    lat: -18.9234,
-    lng: 47.5201,
-  },
-];
-
 const statusLabel = {
   on_mission: "En mission",
   available: "Disponible",
@@ -83,29 +54,79 @@ const statusLabel = {
 };
 
 export default function FleetMap() {
-  const [vehicles, setVehicles] = useState(mockVehicles);
+  const [vehicles, setVehicles] = useState<VehiclePosition[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Simulation GPS - déplace les véhicules en mission toutes les 3 secondes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setVehicles((prev) =>
-        prev.map((v) =>
-          v.status === "on_mission"
-            ? {
-                ...v,
-                lat: v.lat + (Math.random() - 0.5) * 0.002,
-                lng: v.lng + (Math.random() - 0.5) * 0.002,
-              }
-            : v
-        )
-      );
-    }, 3000);
-    return () => clearInterval(interval);
+  const fetchVehicles = useCallback(async () => {
+    const res = await fetch("/api/location");
+    const data = await res.json();
+    if (data.success) {
+      setVehicles(data.data);
+      setLoading(false);
+    }
   }, []);
+
+  // Simulation GPS — déplace les véhicules en mission toutes les 5 secondes
+  const simulateMovement = useCallback(
+    async (vehiclesList: VehiclePosition[]) => {
+      const onMission = vehiclesList.filter((v) => v.status === "on_mission");
+      for (const vehicle of onMission) {
+        const newLat = vehicle.lastPosition.lat + (Math.random() - 0.5) * 0.002;
+        const newLng = vehicle.lastPosition.lng + (Math.random() - 0.5) * 0.002;
+
+        await fetch("/api/location", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vehicleId: vehicle._id,
+            lat: newLat,
+            lng: newLng,
+          }),
+        });
+      }
+      if (onMission.length > 0) fetchVehicles();
+    },
+    [fetchVehicles]
+  );
+
+  useEffect(() => {
+    fetchVehicles();
+  }, [fetchVehicles]);
+
+  useEffect(() => {
+    if (vehicles.length === 0) return;
+    const interval = setInterval(() => {
+      simulateMovement(vehicles);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [vehicles, simulateMovement]);
+
+  if (loading) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-muted rounded-xl">
+        <p className="text-muted-foreground">Chargement de la carte...</p>
+      </div>
+    );
+  }
+
+  if (vehicles.length === 0) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-muted rounded-xl">
+        <p className="text-muted-foreground">
+          Aucun véhicule. Ajoutez des véhicules pour les voir sur la carte.
+        </p>
+      </div>
+    );
+  }
+
+  const center: [number, number] = [
+    vehicles[0]?.lastPosition?.lat || -18.8792,
+    vehicles[0]?.lastPosition?.lng || 47.5079,
+  ];
 
   return (
     <MapContainer
-      center={[-18.8792, 47.5079]}
+      center={center}
       zoom={13}
       style={{ height: "100%", width: "100%", borderRadius: "12px" }}
     >
@@ -116,16 +137,18 @@ export default function FleetMap() {
       {vehicles.map((vehicle) => (
         <Marker
           key={vehicle._id}
-          position={[vehicle.lat, vehicle.lng]}
+          position={[
+            vehicle.lastPosition?.lat || -18.8792,
+            vehicle.lastPosition?.lng || 47.5079,
+          ]}
           icon={vehicleIcon(vehicle.status)}
         >
           <Popup>
-            <div className="text-sm space-y-1">
+            <div className="text-sm space-y-1 min-w-[160px]">
               <p className="font-bold">
-                {vehicle.brand} {vehicle.model}
+                {vehicle.brand} {vehicle.modelName}
               </p>
               <p className="text-gray-500">{vehicle.plate}</p>
-              <p>Conducteur : {vehicle.driver}</p>
               <p>
                 Statut :{" "}
                 <span
@@ -137,8 +160,14 @@ export default function FleetMap() {
                       : "text-orange-600"
                   }`}
                 >
-                  {statusLabel[vehicle.status as keyof typeof statusLabel]}
+                  {statusLabel[vehicle.status]}
                 </span>
+              </p>
+              <p className="text-xs text-gray-400">
+                Mis à jour :{" "}
+                {new Date(vehicle.lastPosition?.updatedAt).toLocaleTimeString(
+                  "fr-FR"
+                )}
               </p>
             </div>
           </Popup>

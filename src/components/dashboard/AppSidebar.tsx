@@ -11,6 +11,7 @@ import {
   BarChart3,
   Truck,
   LogOut,
+  Shield,
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,6 +29,7 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
+  { title: "Utilisateurs", href: "/users", icon: Shield },
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Véhicules", href: "/fleet", icon: Car },
   { title: "Conducteurs", href: "/drivers", icon: Users },

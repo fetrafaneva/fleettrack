@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Car, Truck, Bike, Pencil, Trash2 } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
 
 interface Vehicle {
   _id: string;
@@ -56,6 +57,7 @@ export default function FleetPage() {
   const [editVehicle, setEditVehicle] = useState<Vehicle | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [submitting, setSubmitting] = useState(false);
+  const { isAdmin, isManager } = useRole();
 
   const fetchVehicles = async () => {
     setLoading(true);
@@ -132,120 +134,130 @@ export default function FleetPage() {
           <h2 className="text-2xl font-bold">Véhicules</h2>
           <p className="text-muted-foreground">Gestion de votre flotte</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAdd}>
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter un véhicule
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {editVehicle ? "Modifier le véhicule" : "Nouveau véhicule"}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Immatriculation</label>
-                  <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    placeholder="AB 1234"
-                    value={form.plate}
-                    onChange={(e) =>
-                      setForm({ ...form, plate: e.target.value })
-                    }
-                    required
-                  />
+        {(isAdmin || isManager) && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openAdd}>
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter un véhicule
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  {editVehicle ? "Modifier le véhicule" : "Nouveau véhicule"}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">
+                      Immatriculation
+                    </label>
+                    <input
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                      placeholder="AB 1234"
+                      value={form.plate}
+                      onChange={(e) =>
+                        setForm({ ...form, plate: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Marque</label>
+                    <input
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                      placeholder="Toyota"
+                      value={form.brand}
+                      onChange={(e) =>
+                        setForm({ ...form, brand: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Modèle</label>
+                    <input
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                      placeholder="Hilux"
+                      value={form.model}
+                      onChange={(e) =>
+                        setForm({ ...form, model: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Année</label>
+                    <input
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                      type="number"
+                      placeholder="2023"
+                      value={form.year}
+                      onChange={(e) =>
+                        setForm({ ...form, year: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Type</label>
+                    <select
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                      value={form.type}
+                      onChange={(e) =>
+                        setForm({ ...form, type: e.target.value })
+                      }
+                    >
+                      <option value="car">Voiture</option>
+                      <option value="truck">Camion</option>
+                      <option value="motorcycle">Moto</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Carburant</label>
+                    <select
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                      value={form.fuel}
+                      onChange={(e) =>
+                        setForm({ ...form, fuel: e.target.value })
+                      }
+                    >
+                      <option value="petrol">Essence</option>
+                      <option value="diesel">Diesel</option>
+                      <option value="electric">Électrique</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-sm font-medium">Kilométrage</label>
+                    <input
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                      type="number"
+                      placeholder="0"
+                      value={form.mileage}
+                      onChange={(e) =>
+                        setForm({ ...form, mileage: e.target.value })
+                      }
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Marque</label>
-                  <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    placeholder="Toyota"
-                    value={form.brand}
-                    onChange={(e) =>
-                      setForm({ ...form, brand: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Modèle</label>
-                  <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    placeholder="Hilux"
-                    value={form.model}
-                    onChange={(e) =>
-                      setForm({ ...form, model: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Année</label>
-                  <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    type="number"
-                    placeholder="2023"
-                    value={form.year}
-                    onChange={(e) => setForm({ ...form, year: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Type</label>
-                  <select
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    value={form.type}
-                    onChange={(e) => setForm({ ...form, type: e.target.value })}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
                   >
-                    <option value="car">Voiture</option>
-                    <option value="truck">Camion</option>
-                    <option value="motorcycle">Moto</option>
-                  </select>
+                    Annuler
+                  </Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? "Enregistrement..." : "Enregistrer"}
+                  </Button>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Carburant</label>
-                  <select
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    value={form.fuel}
-                    onChange={(e) => setForm({ ...form, fuel: e.target.value })}
-                  >
-                    <option value="petrol">Essence</option>
-                    <option value="diesel">Diesel</option>
-                    <option value="electric">Électrique</option>
-                  </select>
-                </div>
-                <div className="space-y-1 col-span-2">
-                  <label className="text-sm font-medium">Kilométrage</label>
-                  <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    type="number"
-                    placeholder="0"
-                    value={form.mileage}
-                    onChange={(e) =>
-                      setForm({ ...form, mileage: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "Enregistrement..." : "Enregistrer"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Stats */}
@@ -335,24 +347,28 @@ export default function FleetPage() {
                     </div>
                   </div>
                   <div className="flex gap-2 mt-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => openEdit(vehicle)}
-                    >
-                      <Pencil className="h-3 w-3 mr-1" />
-                      Modifier
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="flex-1"
-                      onClick={() => handleDelete(vehicle._id)}
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Supprimer
-                    </Button>
+                    {(isAdmin || isManager) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => openEdit(vehicle)}
+                      >
+                        <Pencil className="h-3 w-3 mr-1" />
+                        Modifier
+                      </Button>
+                    )}
+                    {isAdmin && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="flex-1"
+                        onClick={() => handleDelete(vehicle._id)}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Supprimer
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, MapPin, User, Car, Clock, Pencil, Trash2 } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
 
 interface Vehicle {
   _id: string;
@@ -67,6 +68,7 @@ export default function MissionsPage() {
   const [filter, setFilter] = useState("all");
   const [form, setForm] = useState(defaultForm);
   const [submitting, setSubmitting] = useState(false);
+  const { isAdmin, isManager } = useRole();
 
   const fetchAll = async () => {
     setLoading(true);
@@ -174,143 +176,147 @@ export default function MissionsPage() {
           <h2 className="text-2xl font-bold">Missions</h2>
           <p className="text-muted-foreground">Gestion et suivi des missions</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAdd}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle mission
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {editMission ? "Modifier la mission" : "Nouvelle mission"}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Titre</label>
-                <input
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  placeholder="Livraison Analakely"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Description</label>
-                <textarea
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  placeholder="Détails de la mission..."
-                  rows={2}
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Véhicule</label>
-                <select
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  value={form.vehicleId}
-                  onChange={(e) =>
-                    setForm({ ...form, vehicleId: e.target.value })
-                  }
-                  required
-                >
-                  <option value="">Sélectionner un véhicule</option>
-                  {vehicles.map((v) => (
-                    <option key={v._id} value={v._id}>
-                      {v.brand} {v.modelName} - {v.plate}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Conducteur</label>
-                <select
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  value={form.driverId}
-                  onChange={(e) =>
-                    setForm({ ...form, driverId: e.target.value })
-                  }
-                  required
-                >
-                  <option value="">Sélectionner un conducteur</option>
-                  {drivers.map((d) => (
-                    <option key={d._id} value={d._id}>
-                      {d.firstName} {d.lastName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Départ</label>
-                <input
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  placeholder="Adresse de départ"
-                  value={form.startAddress}
-                  onChange={(e) =>
-                    setForm({ ...form, startAddress: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Destination</label>
-                <input
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  placeholder="Adresse de destination"
-                  value={form.endAddress}
-                  onChange={(e) =>
-                    setForm({ ...form, endAddress: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+        {(isAdmin || isManager) && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openAdd}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle mission
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  {editMission ? "Modifier la mission" : "Nouvelle mission"}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Date et heure</label>
+                  <label className="text-sm font-medium">Titre</label>
                   <input
                     className="w-full border rounded-md px-3 py-2 text-sm"
-                    type="datetime-local"
-                    value={form.startTime}
+                    placeholder="Livraison Analakely"
+                    value={form.title}
                     onChange={(e) =>
-                      setForm({ ...form, startTime: e.target.value })
+                      setForm({ ...form, title: e.target.value })
                     }
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Distance (km)</label>
-                  <input
+                  <label className="text-sm font-medium">Description</label>
+                  <textarea
                     className="w-full border rounded-md px-3 py-2 text-sm"
-                    type="number"
-                    placeholder="0"
-                    value={form.distance}
+                    placeholder="Détails de la mission..."
+                    rows={2}
+                    value={form.description}
                     onChange={(e) =>
-                      setForm({ ...form, distance: e.target.value })
+                      setForm({ ...form, description: e.target.value })
                     }
                   />
                 </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "Enregistrement..." : "Enregistrer"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Véhicule</label>
+                  <select
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    value={form.vehicleId}
+                    onChange={(e) =>
+                      setForm({ ...form, vehicleId: e.target.value })
+                    }
+                    required
+                  >
+                    <option value="">Sélectionner un véhicule</option>
+                    {vehicles.map((v) => (
+                      <option key={v._id} value={v._id}>
+                        {v.brand} {v.modelName} - {v.plate}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Conducteur</label>
+                  <select
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    value={form.driverId}
+                    onChange={(e) =>
+                      setForm({ ...form, driverId: e.target.value })
+                    }
+                    required
+                  >
+                    <option value="">Sélectionner un conducteur</option>
+                    {drivers.map((d) => (
+                      <option key={d._id} value={d._id}>
+                        {d.firstName} {d.lastName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Départ</label>
+                  <input
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    placeholder="Adresse de départ"
+                    value={form.startAddress}
+                    onChange={(e) =>
+                      setForm({ ...form, startAddress: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Destination</label>
+                  <input
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    placeholder="Adresse de destination"
+                    value={form.endAddress}
+                    onChange={(e) =>
+                      setForm({ ...form, endAddress: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Date et heure</label>
+                    <input
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                      type="datetime-local"
+                      value={form.startTime}
+                      onChange={(e) =>
+                        setForm({ ...form, startTime: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Distance (km)</label>
+                    <input
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                      type="number"
+                      placeholder="0"
+                      value={form.distance}
+                      onChange={(e) =>
+                        setForm({ ...form, distance: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
+                  >
+                    Annuler
+                  </Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? "Enregistrement..." : "Enregistrer"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Stats cliquables */}
@@ -417,22 +423,26 @@ export default function MissionsPage() {
                     </div>
                   </div>
                   <div className="flex gap-2 mt-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openEdit(mission)}
-                    >
-                      <Pencil className="h-3 w-3 mr-1" />
-                      Modifier
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(mission._id)}
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Supprimer
-                    </Button>
+                    {(isAdmin || isManager) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEdit(mission)}
+                      >
+                        <Pencil className="h-3 w-3 mr-1" />
+                        Modifier
+                      </Button>
+                    )}
+                    {isAdmin && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(mission._id)}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Supprimer
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

@@ -44,7 +44,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Panneau gauche — dégradé orange/ambre */}
+      {/* Panneau gauche */}
       <div
         className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden"
         style={{
@@ -54,54 +54,40 @@ export default function LoginPage() {
       >
         {/* Cercles décoratifs */}
         <div
-          className="absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-20"
-          style={{ background: "rgba(255,255,255,0.3)" }}
+          className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-20"
+          style={{ background: "rgba(255,255,255,0.4)" }}
         />
         <div
-          className="absolute -bottom-32 -right-16 w-80 h-80 rounded-full opacity-20"
-          style={{ background: "rgba(255,255,255,0.3)" }}
-        />
-        <div
-          className="absolute top-1/2 left-1/3 w-48 h-48 rounded-full opacity-10"
-          style={{ background: "rgba(255,255,255,0.5)" }}
+          className="absolute -bottom-40 -right-20 w-96 h-96 rounded-full opacity-20"
+          style={{ background: "rgba(255,255,255,0.4)" }}
         />
 
         {/* Logo */}
         <div className="flex items-center gap-3 relative z-10">
-          <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-            <Truck className="h-7 w-7 text-white" />
+          <div className="w-11 h-11 bg-white/20 rounded-2xl border border-white/30 flex items-center justify-center">
+            <Truck className="h-5 w-5 text-white" strokeWidth={2.5} />
           </div>
-          <span className="text-white font-bold text-2xl tracking-tight">
+          <span className="text-white font-black text-xl tracking-tight">
             FleetTrack
           </span>
         </div>
 
-        {/* Texte central */}
+        {/* Centre */}
         <div className="relative z-10 space-y-6">
-          <h1 className="text-4xl font-bold text-white leading-tight">
-            Gérez votre flotte en temps réel
+          <h1 className="text-5xl font-black text-white leading-tight">
+            Votre flotte,
+            <br />
+            <span className="text-white/60">sous contrôle.</span>
           </h1>
-          <p className="text-white/80 text-lg leading-relaxed">
-            Suivez vos véhicules, assignez des missions et analysez les
-            performances de votre flotte depuis une seule plateforme.
+          <p className="text-white/70 text-base max-w-xs leading-relaxed">
+            Gérez véhicules, conducteurs et missions depuis une seule
+            plateforme.
           </p>
-          <div className="flex flex-col gap-3">
-            {[
-              "Suivi GPS en temps réel",
-              "Gestion des missions",
-              "Rapports et statistiques",
-            ].map((item) => (
-              <div key={item} className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-white" />
-                <span className="text-white/90 text-sm">{item}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
-        {/* Footer gauche */}
-        <p className="text-white/50 text-xs relative z-10">
-          © 2025 FleetTrack. Tous droits réservés.
+        {/* Footer */}
+        <p className="text-white/40 text-xs relative z-10">
+          © 2025 FleetTrack · Made in Madagascar 🇲🇬
         </p>
       </div>
 

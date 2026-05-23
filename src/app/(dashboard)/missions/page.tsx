@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,8 +10,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, MapPin, User, Car, Clock, Pencil, Trash2 } from "lucide-react";
+import {
+  Plus,
+  MapPin,
+  User,
+  Car,
+  Clock,
+  Pencil,
+  Trash2,
+  ClipboardList,
+} from "lucide-react";
 import { useRole } from "@/hooks/useRole";
+import { motion } from "framer-motion";
 
 interface Vehicle {
   _id: string;
@@ -41,11 +51,46 @@ interface Mission {
 }
 
 const statusConfig = {
-  pending: { label: "En attente", className: "bg-yellow-100 text-yellow-700" },
-  in_progress: { label: "En cours", className: "bg-blue-100 text-blue-700" },
-  completed: { label: "Terminée", className: "bg-green-100 text-green-700" },
-  cancelled: { label: "Annulée", className: "bg-red-100 text-red-700" },
+  pending: {
+    label: "En attente",
+    color: "#d97706",
+    bg: "rgba(217,119,6,0.08)",
+  },
+  in_progress: {
+    label: "En cours",
+    color: "#3b82f6",
+    bg: "rgba(59,130,246,0.08)",
+  },
+  completed: {
+    label: "Terminée",
+    color: "#16a34a",
+    bg: "rgba(22,163,74,0.08)",
+  },
+  cancelled: { label: "Annulée", color: "#ef4444", bg: "rgba(239,68,68,0.08)" },
 };
+
+const statCards = [
+  {
+    key: "pending",
+    label: "En attente",
+    gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+  },
+  {
+    key: "in_progress",
+    label: "En cours",
+    gradient: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
+  },
+  {
+    key: "completed",
+    label: "Terminées",
+    gradient: "linear-gradient(135deg, #22c55e 0%, #10b981 100%)",
+  },
+  {
+    key: "cancelled",
+    label: "Annulées",
+    gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+  },
+];
 
 const defaultForm = {
   title: "",
@@ -116,7 +161,6 @@ export default function MissionsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-
     const body = {
       title: form.title,
       description: form.description,
@@ -127,26 +171,19 @@ export default function MissionsPage() {
         lng: 47.5079,
         address: form.startAddress,
       },
-      endLocation: {
-        lat: -18.9121,
-        lng: 47.5362,
-        address: form.endAddress,
-      },
+      endLocation: { lat: -18.9121, lng: 47.5362, address: form.endAddress },
       startTime: form.startTime,
       distance: Number(form.distance) || 0,
     };
-
     const url = editMission
       ? `/api/missions/${editMission._id}`
       : "/api/missions";
     const method = editMission ? "PUT" : "POST";
-
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-
     const data = await res.json();
     if (data.success) {
       setOpen(false);
@@ -171,30 +208,41 @@ export default function MissionsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Missions</h2>
-          <p className="text-muted-foreground">Gestion et suivi des missions</p>
+          <h2 className="text-2xl font-black text-foreground">Missions</h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            Gestion et suivi des missions
+          </p>
         </div>
         {(isAdmin || isManager) && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button onClick={openAdd}>
-                <Plus className="h-4 w-4 mr-2" />
+              <button
+                onClick={openAdd}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{
+                  background: "linear-gradient(135deg, #f97316, #f59e0b)",
+                }}
+              >
+                <Plus className="h-4 w-4" />
                 Nouvelle mission
-              </Button>
+              </button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md rounded-2xl">
               <DialogHeader>
-                <DialogTitle>
+                <DialogTitle className="font-black">
                   {editMission ? "Modifier la mission" : "Nouvelle mission"}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Titre</label>
+                  <label className="text-xs font-semibold text-gray-600">
+                    Titre
+                  </label>
                   <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     placeholder="Livraison Analakely"
                     value={form.title}
                     onChange={(e) =>
@@ -204,9 +252,11 @@ export default function MissionsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Description</label>
+                  <label className="text-xs font-semibold text-gray-600">
+                    Description
+                  </label>
                   <textarea
-                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     placeholder="Détails de la mission..."
                     rows={2}
                     value={form.description}
@@ -216,9 +266,11 @@ export default function MissionsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Véhicule</label>
+                  <label className="text-xs font-semibold text-gray-600">
+                    Véhicule
+                  </label>
                   <select
-                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     value={form.vehicleId}
                     onChange={(e) =>
                       setForm({ ...form, vehicleId: e.target.value })
@@ -234,9 +286,11 @@ export default function MissionsPage() {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Conducteur</label>
+                  <label className="text-xs font-semibold text-gray-600">
+                    Conducteur
+                  </label>
                   <select
-                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     value={form.driverId}
                     onChange={(e) =>
                       setForm({ ...form, driverId: e.target.value })
@@ -252,9 +306,11 @@ export default function MissionsPage() {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Départ</label>
+                  <label className="text-xs font-semibold text-gray-600">
+                    Départ
+                  </label>
                   <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     placeholder="Adresse de départ"
                     value={form.startAddress}
                     onChange={(e) =>
@@ -264,9 +320,11 @@ export default function MissionsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Destination</label>
+                  <label className="text-xs font-semibold text-gray-600">
+                    Destination
+                  </label>
                   <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     placeholder="Adresse de destination"
                     value={form.endAddress}
                     onChange={(e) =>
@@ -277,9 +335,11 @@ export default function MissionsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-sm font-medium">Date et heure</label>
+                    <label className="text-xs font-semibold text-gray-600">
+                      Date et heure
+                    </label>
                     <input
-                      className="w-full border rounded-md px-3 py-2 text-sm"
+                      className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                       type="datetime-local"
                       value={form.startTime}
                       onChange={(e) =>
@@ -289,9 +349,11 @@ export default function MissionsPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-medium">Distance (km)</label>
+                    <label className="text-xs font-semibold text-gray-600">
+                      Distance (km)
+                    </label>
                     <input
-                      className="w-full border rounded-md px-3 py-2 text-sm"
+                      className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                       type="number"
                       placeholder="0"
                       value={form.distance}
@@ -301,17 +363,25 @@ export default function MissionsPage() {
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 pt-2">
                   <Button
                     type="button"
                     variant="outline"
+                    className="rounded-xl"
                     onClick={() => setOpen(false)}
                   >
                     Annuler
                   </Button>
-                  <Button type="submit" disabled={submitting}>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-4 py-2 rounded-xl text-white text-sm font-semibold disabled:opacity-60"
+                    style={{
+                      background: "linear-gradient(135deg, #f97316, #f59e0b)",
+                    }}
+                  >
                     {submitting ? "Enregistrement..." : "Enregistrer"}
-                  </Button>
+                  </button>
                 </div>
               </form>
             </DialogContent>
@@ -319,133 +389,162 @@ export default function MissionsPage() {
         )}
       </div>
 
-      {/* Stats cliquables */}
+      {/* Stat cards cliquables */}
       <div className="grid grid-cols-4 gap-4">
-        {Object.entries(statusConfig).map(([key, val]) => (
-          <Card
-            key={key}
-            className={`cursor-pointer transition-shadow hover:shadow-md ${
-              filter === key ? "ring-2 ring-primary" : ""
-            }`}
-            onClick={() => setFilter(filter === key ? "all" : key)}
+        {statCards.map((stat) => (
+          <motion.div
+            key={stat.key}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setFilter(filter === stat.key ? "all" : stat.key)}
+            className="rounded-2xl p-5 text-white relative overflow-hidden cursor-pointer transition-all"
+            style={{
+              background: stat.gradient,
+              opacity: filter !== "all" && filter !== stat.key ? 0.5 : 1,
+              boxShadow:
+                filter === stat.key ? "0 4px 20px rgba(0,0,0,0.15)" : "none",
+            }}
           >
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">
-                {missions.filter((m) => m.status === key).length}
-              </div>
-              <p className="text-sm text-muted-foreground">{val.label}</p>
-            </CardContent>
-          </Card>
+            <div
+              className="absolute -top-6 -right-6 w-20 h-20 rounded-full opacity-20"
+              style={{ background: "rgba(255,255,255,0.5)" }}
+            />
+            <p className="text-3xl font-black relative z-10">
+              {missions.filter((m) => m.status === stat.key).length}
+            </p>
+            <p className="text-white/70 text-xs mt-1 relative z-10">
+              {stat.label}
+            </p>
+          </motion.div>
         ))}
       </div>
 
       {/* Liste missions */}
       {loading ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Chargement...
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-36 rounded-2xl bg-muted animate-pulse" />
+          ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Aucune mission trouvée.
+        <div className="text-center py-16">
+          <ClipboardList className="h-10 w-10 mx-auto text-muted-foreground opacity-30 mb-3" />
+          <p className="text-muted-foreground text-sm">
+            Aucune mission trouvée.
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {filtered.map((mission) => {
+          {filtered.map((mission, index) => {
             const status = statusConfig[mission.status];
             return (
-              <Card
+              <motion.div
                 key={mission._id}
-                className="hover:shadow-md transition-shadow"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
               >
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <div>
-                    <CardTitle className="text-base">{mission.title}</CardTitle>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {mission.description}
-                    </p>
-                  </div>
-                  <span
-                    className={`text-xs px-3 py-1 rounded-full font-medium ${status.className}`}
-                  >
-                    {status.label}
-                  </span>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div className="flex items-start gap-2">
-                      <Car className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-shadow">
+                  <CardContent className="p-5 space-y-4">
+                    {/* Top */}
+                    <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-medium">
-                          {mission.vehicle.brand} {mission.vehicle.modelName}
+                        <p className="font-black text-base text-foreground">
+                          {mission.title}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {mission.vehicle.plate}
-                        </p>
+                        {mission.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {mission.description}
+                          </p>
+                        )}
+                      </div>
+                      <span
+                        className="text-xs font-semibold px-3 py-1 rounded-full flex-shrink-0 ml-4"
+                        style={{ background: status.bg, color: status.color }}
+                      >
+                        {status.label}
+                      </span>
+                    </div>
+
+                    {/* Infos */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="flex items-start gap-2 bg-muted/40 rounded-xl p-2.5">
+                        <Car className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-xs text-foreground truncate">
+                            {mission.vehicle.brand} {mission.vehicle.modelName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {mission.vehicle.plate}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2 bg-muted/40 rounded-xl p-2.5">
+                        <User className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-xs text-foreground truncate">
+                            {mission.driver.firstName} {mission.driver.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Conducteur
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2 bg-muted/40 rounded-xl p-2.5">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-xs text-foreground truncate">
+                            {mission.startLocation.address}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            → {mission.endLocation.address}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2 bg-muted/40 rounded-xl p-2.5">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-semibold text-xs text-foreground">
+                            {new Date(mission.startTime).toLocaleString(
+                              "fr-FR",
+                              {
+                                day: "2-digit",
+                                month: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {mission.distance} km
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <User className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="font-medium">
-                          {mission.driver.firstName} {mission.driver.lastName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Conducteur
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="font-medium text-xs">
-                          {mission.startLocation.address}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          → {mission.endLocation.address}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="font-medium text-xs">
-                          {new Date(mission.startTime).toLocaleString("fr-FR", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {mission.distance} km
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-3">
+
+                    {/* Actions */}
                     {(isAdmin || isManager) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEdit(mission)}
-                      >
-                        <Pencil className="h-3 w-3 mr-1" />
-                        Modifier
-                      </Button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEdit(mission)}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 hover:bg-gray-50 transition-colors"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          Modifier
+                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDelete(mission._id)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-500 border border-red-100 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Supprimer
+                          </button>
+                        )}
+                      </div>
                     )}
-                    {isAdmin && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(mission._id)}
-                      >
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        Supprimer
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
             );
           })}
         </div>

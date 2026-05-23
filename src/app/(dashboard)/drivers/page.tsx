@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +10,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Phone, Mail, CreditCard, Pencil, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Phone,
+  Mail,
+  CreditCard,
+  Pencil,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { useRole } from "@/hooks/useRole";
+import { motion } from "framer-motion";
 
 interface Driver {
   _id: string;
@@ -26,10 +36,40 @@ interface Driver {
 }
 
 const statusConfig = {
-  available: { label: "Disponible", className: "bg-green-100 text-green-700" },
-  on_mission: { label: "En mission", className: "bg-blue-100 text-blue-700" },
-  off: { label: "Hors service", className: "bg-gray-100 text-gray-700" },
+  available: {
+    label: "Disponible",
+    color: "#16a34a",
+    bg: "rgba(22,163,74,0.08)",
+  },
+  on_mission: {
+    label: "En mission",
+    color: "#3b82f6",
+    bg: "rgba(59,130,246,0.08)",
+  },
+  off: {
+    label: "Hors service",
+    color: "#6b7280",
+    bg: "rgba(107,114,128,0.08)",
+  },
 };
+
+const statCards = (drivers: Driver[]) => [
+  {
+    label: "Disponibles",
+    value: drivers.filter((d) => d.status === "available").length,
+    gradient: "linear-gradient(135deg, #22c55e 0%, #10b981 100%)",
+  },
+  {
+    label: "En mission",
+    value: drivers.filter((d) => d.status === "on_mission").length,
+    gradient: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
+  },
+  {
+    label: "Hors service",
+    value: drivers.filter((d) => d.status === "off").length,
+    gradient: "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)",
+  },
+];
 
 const defaultForm = {
   firstName: "",
@@ -47,6 +87,7 @@ export default function DriversPage() {
   const [editDriver, setEditDriver] = useState<Driver | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [submitting, setSubmitting] = useState(false);
+  const { isAdmin, isManager } = useRole();
 
   const fetchDrivers = async () => {
     setLoading(true);
@@ -82,16 +123,13 @@ export default function DriversPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-
     const url = editDriver ? `/api/drivers/${editDriver._id}` : "/api/drivers";
     const method = editDriver ? "PUT" : "POST";
-
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-
     const data = await res.json();
     if (data.success) {
       setOpen(false);
@@ -113,237 +151,291 @@ export default function DriversPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Conducteurs</h2>
-          <p className="text-muted-foreground">Gestion de vos conducteurs</p>
+          <h2 className="text-2xl font-black text-foreground">Conducteurs</h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            Gestion de vos conducteurs
+          </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAdd}>
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter un conducteur
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {editDriver ? "Modifier le conducteur" : "Nouveau conducteur"}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Prénom</label>
-                  <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    placeholder="Rakoto"
-                    value={form.firstName}
-                    onChange={(e) =>
-                      setForm({ ...form, firstName: e.target.value })
-                    }
-                    required
-                  />
+        {(isAdmin || isManager) && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <button
+                onClick={openAdd}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{
+                  background: "linear-gradient(135deg, #f97316, #f59e0b)",
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Ajouter un conducteur
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="font-black">
+                  {editDriver ? "Modifier le conducteur" : "Nouveau conducteur"}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-600">
+                      Prénom
+                    </label>
+                    <input
+                      className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      placeholder="Rakoto"
+                      value={form.firstName}
+                      onChange={(e) =>
+                        setForm({ ...form, firstName: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-600">
+                      Nom
+                    </label>
+                    <input
+                      className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      placeholder="Jean"
+                      value={form.lastName}
+                      onChange={(e) =>
+                        setForm({ ...form, lastName: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-xs font-semibold text-gray-600">
+                      Email
+                    </label>
+                    <input
+                      className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      type="email"
+                      placeholder="rakoto@fleet.mg"
+                      value={form.email}
+                      onChange={(e) =>
+                        setForm({ ...form, email: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-xs font-semibold text-gray-600">
+                      Téléphone
+                    </label>
+                    <input
+                      className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      placeholder="+261 34 00 000 00"
+                      value={form.phone}
+                      onChange={(e) =>
+                        setForm({ ...form, phone: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-600">
+                      N° Permis
+                    </label>
+                    <input
+                      className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      placeholder="MG-2021-001234"
+                      value={form.licenseNumber}
+                      onChange={(e) =>
+                        setForm({ ...form, licenseNumber: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-600">
+                      Expiration permis
+                    </label>
+                    <input
+                      className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      type="date"
+                      value={form.licenseExpiry}
+                      onChange={(e) =>
+                        setForm({ ...form, licenseExpiry: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Nom</label>
-                  <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    placeholder="Jean"
-                    value={form.lastName}
-                    onChange={(e) =>
-                      setForm({ ...form, lastName: e.target.value })
-                    }
-                    required
-                  />
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-xl"
+                    onClick={() => setOpen(false)}
+                  >
+                    Annuler
+                  </Button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-4 py-2 rounded-xl text-white text-sm font-semibold disabled:opacity-60"
+                    style={{
+                      background: "linear-gradient(135deg, #f97316, #f59e0b)",
+                    }}
+                  >
+                    {submitting ? "Enregistrement..." : "Enregistrer"}
+                  </button>
                 </div>
-                <div className="space-y-1 col-span-2">
-                  <label className="text-sm font-medium">Email</label>
-                  <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    type="email"
-                    placeholder="rakoto@fleet.mg"
-                    value={form.email}
-                    onChange={(e) =>
-                      setForm({ ...form, email: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-1 col-span-2">
-                  <label className="text-sm font-medium">Téléphone</label>
-                  <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    placeholder="+261 34 00 000 00"
-                    value={form.phone}
-                    onChange={(e) =>
-                      setForm({ ...form, phone: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">N° Permis</label>
-                  <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    placeholder="MG-2021-001234"
-                    value={form.licenseNumber}
-                    onChange={(e) =>
-                      setForm({ ...form, licenseNumber: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">
-                    Expiration permis
-                  </label>
-                  <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    type="date"
-                    value={form.licenseExpiry}
-                    onChange={(e) =>
-                      setForm({ ...form, licenseExpiry: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "Enregistrement..." : "Enregistrer"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
-      {/* Stats */}
+      {/* Stat cards */}
       <div className="grid grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">
-              {drivers.filter((d) => d.status === "available").length}
-            </div>
-            <p className="text-sm text-muted-foreground">Disponibles</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">
-              {drivers.filter((d) => d.status === "on_mission").length}
-            </div>
-            <p className="text-sm text-muted-foreground">En mission</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-gray-600">
-              {drivers.filter((d) => d.status === "off").length}
-            </div>
-            <p className="text-sm text-muted-foreground">Hors service</p>
-          </CardContent>
-        </Card>
+        {statCards(drivers).map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-2xl p-5 text-white relative overflow-hidden"
+            style={{ background: stat.gradient }}
+          >
+            <div
+              className="absolute -top-6 -right-6 w-20 h-20 rounded-full opacity-20"
+              style={{ background: "rgba(255,255,255,0.5)" }}
+            />
+            <p className="text-3xl font-black relative z-10">{stat.value}</p>
+            <p className="text-white/70 text-xs mt-1 relative z-10">
+              {stat.label}
+            </p>
+          </div>
+        ))}
       </div>
 
       {/* Liste */}
       {loading ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Chargement...
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-48 rounded-2xl bg-muted animate-pulse" />
+          ))}
         </div>
       ) : drivers.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Aucun conducteur. Ajoutez votre premier conducteur !
+        <div className="text-center py-16">
+          <Users className="h-10 w-10 mx-auto text-muted-foreground opacity-30 mb-3" />
+          <p className="text-muted-foreground text-sm">
+            Aucun conducteur. Ajoutez votre premier conducteur !
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {drivers.map((driver) => {
+          {drivers.map((driver, index) => {
             const status = statusConfig[driver.status];
             return (
-              <Card
+              <motion.div
                 key={driver._id}
-                className="hover:shadow-md transition-shadow"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
               >
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                      {driver.firstName[0]}
-                      {driver.lastName[0]}
+                <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-shadow">
+                  <CardContent className="p-5 space-y-4">
+                    {/* Top */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm"
+                          style={{
+                            background:
+                              "linear-gradient(135deg, #f97316, #f59e0b)",
+                            color: "white",
+                          }}
+                        >
+                          {driver.firstName[0]}
+                          {driver.lastName[0]}
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-foreground">
+                            {driver.firstName} {driver.lastName}
+                          </p>
+                          <span
+                            className="text-xs font-medium px-2 py-0.5 rounded-full"
+                            style={{
+                              background: status.bg,
+                              color: status.color,
+                            }}
+                          >
+                            {status.label}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-sm font-semibold">
-                        {driver.firstName} {driver.lastName}
-                      </CardTitle>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${status.className}`}
-                      >
-                        {status.label}
-                      </span>
+
+                    {/* Infos */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Mail className="h-3.5 w-3.5" />
+                        <span>{driver.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Phone className="h-3.5 w-3.5" />
+                        <span>{driver.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CreditCard className="h-3.5 w-3.5" />
+                        <span>
+                          {driver.licenseNumber} · exp.{" "}
+                          {new Date(driver.licenseExpiry).toLocaleDateString(
+                            "fr-FR"
+                          )}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Mail className="h-3 w-3" />
-                    <span>{driver.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Phone className="h-3 w-3" />
-                    <span>{driver.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CreditCard className="h-3 w-3" />
-                    <span>
-                      {driver.licenseNumber} • exp.{" "}
-                      {new Date(driver.licenseExpiry).toLocaleDateString(
-                        "fr-FR"
-                      )}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                    <div className="text-center">
-                      <p className="text-sm font-bold">
-                        {driver.totalMissions}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Missions</p>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-2 pt-3 border-t">
+                      <div className="text-center bg-muted/40 rounded-xl py-2">
+                        <p className="text-sm font-black">
+                          {driver.totalMissions}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Missions
+                        </p>
+                      </div>
+                      <div className="text-center bg-muted/40 rounded-xl py-2">
+                        <p className="text-sm font-black">
+                          {driver.totalKm.toLocaleString()} km
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Parcourus
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <p className="text-sm font-bold">
-                        {driver.totalKm.toLocaleString()} km
-                      </p>
-                      <p className="text-xs text-muted-foreground">Parcourus</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => openEdit(driver)}
-                    >
-                      <Pencil className="h-3 w-3 mr-1" />
-                      Modifier
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="flex-1"
-                      onClick={() => handleDelete(driver._id)}
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Supprimer
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+
+                    {/* Actions */}
+                    {(isAdmin || isManager) && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEdit(driver)}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border border-gray-200 hover:bg-gray-50 transition-colors"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          Modifier
+                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDelete(driver._id)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold text-red-500 border border-red-100 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Supprimer
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
             );
           })}
         </div>

@@ -4,12 +4,13 @@ import Mission from "@/models/Mission";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const mission = await Mission.findById(params.id)
-      .populate("vehicle", "plate model brand type")
+    const { id } = await params;
+    const mission = await Mission.findById(id)
+      .populate("vehicle", "plate brand modelName type")
       .populate("driver", "firstName lastName phone");
     if (!mission) {
       return NextResponse.json(
@@ -18,9 +19,9 @@ export async function GET(
       );
     }
     return NextResponse.json({ success: true, data: mission });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: "Erreur serveur" },
+      { success: false, error: error.message },
       { status: 500 }
     );
   }
@@ -28,16 +29,17 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
+    const { id } = await params;
     const body = await request.json();
-    const mission = await Mission.findByIdAndUpdate(params.id, body, {
+    const mission = await Mission.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,
     })
-      .populate("vehicle", "plate model brand")
+      .populate("vehicle", "plate brand modelName")
       .populate("driver", "firstName lastName phone");
     if (!mission) {
       return NextResponse.json(
@@ -46,9 +48,9 @@ export async function PUT(
       );
     }
     return NextResponse.json({ success: true, data: mission });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: "Erreur lors de la mise à jour" },
+      { success: false, error: error.message },
       { status: 400 }
     );
   }
@@ -56,11 +58,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const mission = await Mission.findByIdAndDelete(params.id);
+    const { id } = await params;
+    const mission = await Mission.findByIdAndDelete(id);
     if (!mission) {
       return NextResponse.json(
         { success: false, error: "Mission non trouvée" },
@@ -68,9 +71,9 @@ export async function DELETE(
       );
     }
     return NextResponse.json({ success: true, data: {} });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: "Erreur serveur" },
+      { success: false, error: error.message },
       { status: 500 }
     );
   }

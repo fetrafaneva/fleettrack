@@ -4,11 +4,12 @@ import Vehicle from "@/models/Vehicle";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const vehicle = await Vehicle.findById(params.id);
+    const { id } = await params;
+    const vehicle = await Vehicle.findById(id);
     if (!vehicle) {
       return NextResponse.json(
         { success: false, error: "Véhicule non trouvé" },
@@ -16,9 +17,9 @@ export async function GET(
       );
     }
     return NextResponse.json({ success: true, data: vehicle });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: "Erreur serveur" },
+      { success: false, error: error.message },
       { status: 500 }
     );
   }
@@ -26,15 +27,25 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
+    const { id } = await params;
     const body = await request.json();
-    const vehicle = await Vehicle.findByIdAndUpdate(params.id, body, {
+
+    const vehicleData = {
+      ...body,
+      modelName: body.model || body.modelName,
+      year: Number(body.year),
+      mileage: Number(body.mileage) || 0,
+    };
+
+    const vehicle = await Vehicle.findByIdAndUpdate(id, vehicleData, {
       new: true,
       runValidators: true,
     });
+
     if (!vehicle) {
       return NextResponse.json(
         { success: false, error: "Véhicule non trouvé" },
@@ -42,9 +53,9 @@ export async function PUT(
       );
     }
     return NextResponse.json({ success: true, data: vehicle });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: "Erreur lors de la mise à jour" },
+      { success: false, error: error.message },
       { status: 400 }
     );
   }
@@ -52,11 +63,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const vehicle = await Vehicle.findByIdAndDelete(params.id);
+    const { id } = await params;
+    const vehicle = await Vehicle.findByIdAndDelete(id);
     if (!vehicle) {
       return NextResponse.json(
         { success: false, error: "Véhicule non trouvé" },
@@ -64,9 +76,9 @@ export async function DELETE(
       );
     }
     return NextResponse.json({ success: true, data: {} });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: "Erreur serveur" },
+      { success: false, error: error.message },
       { status: 500 }
     );
   }

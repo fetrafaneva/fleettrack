@@ -10,7 +10,13 @@ export async function GET() {
       .populate("vehicle", "plate brand modelName")
       .populate("driver", "firstName lastName phone")
       .sort({ createdAt: -1 });
-    return NextResponse.json({ success: true, data: missions });
+
+    // Filtrer les missions avec vehicle ou driver null
+    const validMissions = missions.filter(
+      (m) => m.vehicle !== null && m.driver !== null
+    );
+
+    return NextResponse.json({ success: true, data: validMissions });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: "Erreur serveur" },

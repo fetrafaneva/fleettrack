@@ -12,7 +12,12 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { motion, AnimatePresence } from "framer-motion";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 const typeConfig = {
@@ -103,9 +108,8 @@ export default function NotificationBell() {
         className="w-[380px] p-0 border-l border-gray-100 overflow-hidden"
         style={{ background: "#f8f9fa" }}
       >
-        <VisuallyHidden.Root>
-          <h2>Notifications</h2>
-        </VisuallyHidden.Root>
+        <SheetTitle className="sr-only">Notifications</SheetTitle>
+
         {/* Header */}
         <div className="px-5 pt-6 pb-4 bg-white border-b border-gray-100">
           <div className="flex items-center justify-between">

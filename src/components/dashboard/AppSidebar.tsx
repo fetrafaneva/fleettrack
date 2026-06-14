@@ -65,6 +65,12 @@ const navItems = [
     icon: BarChart3,
     roles: ["admin", "manager"],
   },
+  {
+    title: "Mes Missions",
+    href: "/my-missions",
+    icon: ClipboardList,
+    roles: ["driver"],
+  },
   { title: "Utilisateurs", href: "/users", icon: Shield, roles: ["admin"] },
 ];
 
